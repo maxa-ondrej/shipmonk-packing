@@ -119,7 +119,7 @@ readonly class PackagingService {
             wg: $dto->weight,
         ), $products);
         $bins = array_map(static fn (Packaging $entity) => new ShipmentBinRequest(
-            id: (string) $entity->getId(),
+            id: (string) $entity->id,
             w: $entity->width,
             h: $entity->height,
             d: $entity->length,
@@ -174,6 +174,34 @@ readonly class PackagingService {
      * @param non-empty-array<Packaging>      $packagings
      */
     private function calculateFallback(array $products, array $packagings): PackagingResultResponse {
-        return PackagingResultResponse::createFits(self::EVALUATOR_FALLBACK, PackagingResponse::fromPackagingEntity($packagings[0]));
+        $maxWidth = max(array_map(static fn (ProductRequest $dto) => $dto->width, $products));
+        $maxHeight = max(array_map(static fn (ProductRequest $dto) => $dto->height, $products));
+        $maxLength = max(array_map(static fn (ProductRequest $dto) => $dto->length, $products));
+        $packagings = array_filter(
+            $packagings,
+            static fn (Packaging $entity) => $entity->width >= $maxWidth
+                && $entity->height >= $maxHeight
+                && $entity->length >= $maxLength
+        );
+        $totalVolume = array_sum(array_map(static fn (ProductRequest $dto) => $dto->width * $dto->height * $dto->length, $products));
+        $packagings = array_filter($packagings, static fn (Packaging $entity) => $entity->getVolume() >= $totalVolume);
+        if (empty($packagings)) {
+            return PackagingResultResponse::createDoesNotFit();
+        }
+
+        usort($packagings, static fn (Packaging $a, Packaging $b) => $a->getVolume() <=> $b->getVolume());
+
+        $totalWidth = array_sum(array_map(static fn (ProductRequest $dto) => $dto->width, $products));
+        $totalHeight = array_sum(array_map(static fn (ProductRequest $dto) => $dto->height, $products));
+        $totalLength = array_sum(array_map(static fn (ProductRequest $dto) => $dto->length, $products));
+        foreach ($packagings as $packaging) {
+            if ($packaging->width >= $totalWidth
+                || $packaging->height >= $totalHeight
+                || $packaging->length >= $totalLength) {
+                return PackagingResultResponse::createFits(self::EVALUATOR_FALLBACK, PackagingResponse::fromPackagingEntity($packaging));
+            }
+        }
+
+        return PackagingResultResponse::createDoesNotFit();
     }
 }

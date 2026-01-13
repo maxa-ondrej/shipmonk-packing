@@ -27,6 +27,13 @@ final class PackagingTest extends TestCase {
         $this->assertSame(123, $p->getId());
     }
 
+    public function testGetVolumeCalculatedCorrectly(): void {
+        $p = new Packaging(1.0, 2.0, 3.0, 4.0);
+
+        $this->assertSame(6.0, $p->getVolume());
+        $this->assertSame(6.0, $p->getVolume());
+    }
+
     public function testPropertiesSetCorrectly(): void {
         $p = new Packaging(1.1, 2.2, 3.3, 4.4);
         $this->assertSame(1.1, $p->width);

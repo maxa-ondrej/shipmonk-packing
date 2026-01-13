@@ -17,7 +17,6 @@ use App\Service\BinPackingClient\Dto\Response\PackAShipmentResponse;
 use App\Service\BinPackingClient\Dto\Response\ShipmentBinDataResponse;
 use App\Service\BinPackingClient\Dto\Response\ShipmentPackedResponse;
 use Doctrine\ORM\EntityManager;
-use Doctrine\ORM\Exception\ORMException;
 use Doctrine\ORM\OptimisticLockException;
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Psr7\Request;
@@ -84,6 +83,7 @@ final class PackagingServiceTest extends TestCase {
         $packagingRepository->expects($this->once())->method('count')->willReturn(1);
         $packagingEntity = self::createStub(Packaging::class);
         $packagingEntity->method('getId')->willReturn(1);
+        $packagingEntity->method('getVolume')->willReturn(1.0);
         $packagingEntity->width = 1;
         $packagingEntity->height = 1;
         $packagingEntity->length = 1;
@@ -123,7 +123,7 @@ final class PackagingServiceTest extends TestCase {
         $packagingRepository = self::createMock(PackagingRepository::class);
         $packagingRepository->expects($this->once())->method('count')->willReturn(0);
         $packagingRepository->expects($this->never())->method('findByAllowedWeight')->willReturn([]);
-        $packagingResultRepository = $this->createMock(PackagingResultRepository::class);
+        $packagingResultRepository = self::createMock(PackagingResultRepository::class);
         $packagingResultRepository->expects($this->never())->method('findOneByProductsCode')->willReturn(null);
         $service = new PackagingService(
             $client,
@@ -155,12 +155,13 @@ final class PackagingServiceTest extends TestCase {
         $packagingRepository->expects($this->once())->method('count')->willReturn(1);
         $packagingEntity = self::createStub(Packaging::class);
         $packagingEntity->method('getId')->willReturn(1);
+        $packagingEntity->method('getVolume')->willReturn(1.0);
         $packagingEntity->width = 1;
         $packagingEntity->height = 1;
         $packagingEntity->length = 1;
         $packagingEntity->maxWeight = 1;
         $packagingRepository->expects($this->never())->method('findAll');
-        $packagingResultRepository = $this->createMock(PackagingResultRepository::class);
+        $packagingResultRepository = self::createMock(PackagingResultRepository::class);
         $packagingResultEntity = self::createStub(PackagingResult::class);
         $packagingResultEntity->method('getId')->willReturn(1);
         $packagingResultEntity->productsCode = '1:1:1';
@@ -193,8 +194,6 @@ final class PackagingServiceTest extends TestCase {
         $client = self::createMock(BinPackingClient::class);
         $client->expects($this->once())->method('packShipment')
             ->willReturnCallback(static function (PackAShipmentRequest $request): PackAShipmentResponse {
-                self::assertEmpty($request->items);
-
                 $mockResponse = self::createStub(PackAShipmentResponse::class);
                 $mockResponse->response = self::createStub(PackAShipmentDataResponse::class);
                 $mockResponse->response->status = -1;
@@ -209,12 +208,13 @@ final class PackagingServiceTest extends TestCase {
         $packagingRepository->expects($this->once())->method('count')->willReturn(1);
         $packagingEntity = self::createStub(Packaging::class);
         $packagingEntity->method('getId')->willReturn(1);
+        $packagingEntity->method('getVolume')->willReturn(1.0);
         $packagingEntity->width = 1;
         $packagingEntity->height = 1;
         $packagingEntity->length = 1;
         $packagingEntity->maxWeight = 1;
         $packagingRepository->expects($this->once())->method('findByAllowedWeight')
-            ->with(0)
+            ->with(1.0)
             ->willReturn([
                 $packagingEntity,
             ]);
@@ -227,7 +227,14 @@ final class PackagingServiceTest extends TestCase {
             $packagingRepository,
             $packagingResultRepository
         );
-        $response = $service->calculateSmallestBox([]);
+        $product = self::createStub(ProductRequest::class);
+        $product->id = 1;
+        $product->width = 1;
+        $product->height = 1;
+        $product->length = 1;
+        $product->weight = 1;
+
+        $response = $service->calculateSmallestBox([$product]);
 
         self::assertTrue($response->fits);
         self::assertNotNull($response->packaging);
@@ -244,6 +251,7 @@ final class PackagingServiceTest extends TestCase {
         $packagingRepository->expects($this->once())->method('count')->willReturn(1);
         $packagingEntity = self::createStub(Packaging::class);
         $packagingEntity->method('getId')->willReturn(1);
+        $packagingEntity->method('getVolume')->willReturn(1.0);
         $packagingEntity->width = 1;
         $packagingEntity->height = 1;
         $packagingEntity->length = 1;
@@ -286,6 +294,7 @@ final class PackagingServiceTest extends TestCase {
         $packagingRepository->expects($this->once())->method('count')->willReturn(1);
         $packagingEntity = self::createStub(Packaging::class);
         $packagingEntity->method('getId')->willReturn(1);
+        $packagingEntity->method('getVolume')->willReturn(1.0);
         $packagingEntity->width = 1;
         $packagingEntity->height = 1;
         $packagingEntity->length = 1;
@@ -415,6 +424,7 @@ final class PackagingServiceTest extends TestCase {
         $packagingRepository->expects($this->once())->method('count')->willReturn(1);
         $packagingEntity = self::createStub(Packaging::class);
         $packagingEntity->method('getId')->willReturn(7);
+        $packagingEntity->method('getVolume')->willReturn(1000.0);
         $packagingEntity->width = 10;
         $packagingEntity->height = 10;
         $packagingEntity->length = 10;
@@ -480,6 +490,7 @@ final class PackagingServiceTest extends TestCase {
         $packagingRepository->expects($this->once())->method('count')->willReturn(1);
         $packagingEntity = self::createStub(Packaging::class);
         $packagingEntity->method('getId')->willReturn(5);
+        $packagingEntity->method('getVolume')->willReturn(1000.0);
         $packagingEntity->width = 10;
         $packagingEntity->height = 10;
         $packagingEntity->length = 10;
@@ -548,6 +559,7 @@ final class PackagingServiceTest extends TestCase {
         $packagingRepository->expects($this->once())->method('count')->willReturn(1);
         $packagingEntity = self::createStub(Packaging::class);
         $packagingEntity->method('getId')->willReturn(9);
+        $packagingEntity->method('getVolume')->willReturn(9.0);
         $packagingEntity->width = 3;
         $packagingEntity->height = 3;
         $packagingEntity->length = 3;
@@ -619,6 +631,7 @@ final class PackagingServiceTest extends TestCase {
         $packagingRepository->expects($this->once())->method('count')->willReturn(1);
         $packagingEntity = self::createStub(Packaging::class);
         $packagingEntity->method('getId')->willReturn(3);
+        $packagingEntity->method('getVolume')->willReturn(8.0);
         $packagingEntity->width = 2;
         $packagingEntity->height = 2;
         $packagingEntity->length = 2;
@@ -690,6 +703,7 @@ final class PackagingServiceTest extends TestCase {
         $packagingRepository->expects($this->once())->method('count')->willReturn(1);
         $packagingEntity = self::createStub(Packaging::class);
         $packagingEntity->method('getId')->willReturn(4);
+        $packagingEntity->method('getVolume')->willReturn(64.0);
         $packagingEntity->width = 4;
         $packagingEntity->height = 4;
         $packagingEntity->length = 4;
@@ -723,5 +737,488 @@ final class PackagingServiceTest extends TestCase {
         self::assertNotNull($response->packaging);
         self::assertSame(PackagingService::EVALUATOR_API, $response->evaluator);
         self::assertSame(100, $response->packaging->id);
+    }
+
+    public function testCalculateFallbackReturnsFitsWithFirstPackaging(): void {
+        $client = self::createMock(BinPackingClient::class);
+        // Force calculateBestBin to fail so calculateFallback is used by throwing JsonException
+        $client->expects($this->once())->method('packShipment')
+            ->willThrowException(new JsonException('service error'));
+
+        $em = self::createStub(EntityManager::class);
+
+        $packagingRepository = self::createMock(PackagingRepository::class);
+        $packagingRepository->expects($this->once())->method('count')->willReturn(1);
+        $firstPackaging = self::createStub(Packaging::class);
+        $firstPackaging->method('getId')->willReturn(1);
+        $firstPackaging->method('getVolume')->willReturn(1320.0);
+        $firstPackaging->width = 10.0;
+        $firstPackaging->height = 11.0;
+        $firstPackaging->length = 12.0;
+        $firstPackaging->maxWeight = 50.0;
+        // create a stub entity that will be returned by the repository
+        $packagingRepository->expects($this->once())->method('findByAllowedWeight')
+            ->with(1)
+            ->willReturn([$firstPackaging]);
+
+        $packagingResultRepository = self::createMock(PackagingResultRepository::class);
+        $packagingResultRepository->expects($this->once())->method('findOneByProductsCode')->willReturn(null);
+
+        $service = new PackagingService(
+            $client,
+            self::createStub(Logger::class),
+            $em,
+            $packagingRepository,
+            $packagingResultRepository
+        );
+
+        $product = self::createStub(ProductRequest::class);
+        $product->id = 1;
+        $product->width = 1;
+        $product->height = 1;
+        $product->length = 1;
+        $product->weight = 1;
+
+        $result = $service->calculateSmallestBox([$product]);
+
+        self::assertTrue($result->fits);
+        self::assertSame(PackagingService::EVALUATOR_FALLBACK, $result->evaluator);
+        self::assertNotNull($result->packaging);
+        self::assertSame(10.0, $result->packaging->width);
+        self::assertSame(11.0, $result->packaging->height);
+        self::assertSame(12.0, $result->packaging->length);
+        self::assertSame(50.0, $result->packaging->maxWeight);
+    }
+
+    public function testCalculateFallbackChoosesFirstPackagingWhenMultiple(): void {
+        $client = self::createMock(BinPackingClient::class);
+        $client->expects($this->once())->method('packShipment')->willThrowException(new JsonException('service error'));
+
+        $em = self::createStub(EntityManager::class);
+
+        $packagingRepository = self::createMock(PackagingRepository::class);
+        $packagingRepository->expects($this->once())->method('count')->willReturn(1);
+        $packagingA = self::createStub(Packaging::class);
+        $packagingA->method('getId')->willReturn(4);
+        $packagingA->method('getVolume')->willReturn(1.0);
+        $packagingA->width = 1.0;
+        $packagingA->height = 1.0;
+        $packagingA->length = 1.0;
+        $packagingA->maxWeight = 1.0;
+        $packagingB = self::createStub(Packaging::class);
+        $packagingB->method('getId')->willReturn(5);
+        $packagingA->method('getVolume')->willReturn(8.0);
+        $packagingB->width = 2.0;
+        $packagingB->height = 2.0;
+        $packagingB->length = 2.0;
+        $packagingB->maxWeight = 2.0;
+        $packagingRepository->expects($this->once())->method('findByAllowedWeight')
+            ->with(1)
+            ->willReturn([$packagingA, $packagingB]);
+
+        $packagingResultRepository = self::createMock(PackagingResultRepository::class);
+        $packagingResultRepository->expects($this->once())->method('findOneByProductsCode')->willReturn(null);
+
+        $service = new PackagingService(
+            $client,
+            self::createStub(Logger::class),
+            $em,
+            $packagingRepository,
+            $packagingResultRepository
+        );
+
+        $product = self::createStub(ProductRequest::class);
+        $product->id = 1;
+        $product->width = 1;
+        $product->height = 1;
+        $product->length = 1;
+        $product->weight = 1;
+
+        $result = $service->calculateSmallestBox([$product]);
+
+        self::assertTrue($result->fits);
+        self::assertSame(PackagingService::EVALUATOR_FALLBACK, $result->evaluator);
+        self::assertNotNull($result->packaging);
+        // ensure chosen packaging corresponds to the first in the array
+        self::assertSame(1.0, $result->packaging->width);
+    }
+
+    public function testCalculateFallbackWhenProductExceedsWidth(): void {
+        $client = self::createMock(BinPackingClient::class);
+        $client->expects($this->once())->method('packShipment')->willThrowException(new JsonException('service error'));
+
+        $em = self::createStub(EntityManager::class);
+
+        $packagingRepository = self::createMock(PackagingRepository::class);
+        $packagingRepository->expects($this->once())->method('count')->willReturn(1);
+        $packaging = self::createStub(Packaging::class);
+        $packaging->width = 2.0;
+        $packaging->height = 10.0;
+        $packaging->length = 10.0;
+        $packaging->maxWeight = 100.0;
+        $packaging->method('getId')->willReturn(1);
+        $packaging->method('getVolume')->willReturn(200.0);
+        $packagingRepository->expects($this->once())->method('findByAllowedWeight')
+            ->with(1)
+            ->willReturn([$packaging]);
+
+        $packagingResultRepository = self::createMock(PackagingResultRepository::class);
+        $packagingResultRepository->expects($this->once())->method('findOneByProductsCode')->willReturn(null);
+
+        $service = new PackagingService($client, self::createStub(Logger::class), $em, $packagingRepository, $packagingResultRepository);
+
+        $product = self::createStub(ProductRequest::class);
+        $product->id = 1;
+        $product->width = 3; // exceeds packaging width
+        $product->height = 1;
+        $product->length = 1;
+        $product->weight = 1;
+
+        $result = $service->calculateSmallestBox([$product]);
+
+        self::assertFalse($result->fits);
+    }
+
+    public function testCalculateFallbackWhenProductExceedsHeight(): void {
+        $client = self::createMock(BinPackingClient::class);
+        $client->expects($this->once())->method('packShipment')->willThrowException(new JsonException('service error'));
+
+        $em = self::createStub(EntityManager::class);
+
+        $packagingRepository = self::createMock(PackagingRepository::class);
+        $packagingRepository->expects($this->once())->method('count')->willReturn(1);
+        $packaging = self::createStub(Packaging::class);
+        $packaging->width = 10.0;
+        $packaging->height = 2.0;
+        $packaging->length = 10.0;
+        $packaging->maxWeight = 100.0;
+        $packaging->method('getId')->willReturn(1);
+        $packaging->method('getVolume')->willReturn(200.0);
+        $packagingRepository->expects($this->once())->method('findByAllowedWeight')
+            ->with(1)
+            ->willReturn([$packaging]);
+
+        $packagingResultRepository = self::createMock(PackagingResultRepository::class);
+        $packagingResultRepository->expects($this->once())->method('findOneByProductsCode')->willReturn(null);
+
+        $service = new PackagingService($client, self::createStub(Logger::class), $em, $packagingRepository, $packagingResultRepository);
+
+        $product = self::createStub(ProductRequest::class);
+        $product->id = 1;
+        $product->width = 1;
+        $product->height = 3; // exceeds packaging height
+        $product->length = 1;
+        $product->weight = 1;
+
+        $result = $service->calculateSmallestBox([$product]);
+
+        self::assertFalse($result->fits);
+    }
+
+    public function testCalculateFallbackWhenProductExceedsLength(): void {
+        $client = self::createMock(BinPackingClient::class);
+        $client->expects($this->once())->method('packShipment')->willThrowException(new JsonException('service error'));
+
+        $em = self::createStub(EntityManager::class);
+
+        $packagingRepository = self::createMock(PackagingRepository::class);
+        $packagingRepository->expects($this->once())->method('count')->willReturn(1);
+        $packaging = self::createStub(Packaging::class);
+        $packaging->width = 10.0;
+        $packaging->height = 10.0;
+        $packaging->length = 2.0;
+        $packaging->maxWeight = 100.0;
+        $packaging->method('getId')->willReturn(1);
+        $packaging->method('getVolume')->willReturn(200.0);
+        $packagingRepository->expects($this->once())->method('findByAllowedWeight')
+            ->with(1)
+            ->willReturn([$packaging]);
+
+        $packagingResultRepository = self::createMock(PackagingResultRepository::class);
+        $packagingResultRepository->expects($this->once())->method('findOneByProductsCode')->willReturn(null);
+        $service = new PackagingService($client, self::createStub(Logger::class), $em, $packagingRepository, $packagingResultRepository);
+
+        $product = self::createStub(ProductRequest::class);
+        $product->id = 1;
+        $product->width = 1;
+        $product->height = 1;
+        $product->length = 3; // exceeds packaging length
+        $product->weight = 1;
+
+        $result = $service->calculateSmallestBox([$product]);
+
+        self::assertFalse($result->fits);
+    }
+
+    public function testCalculateFallbackWhenProductExceedsVolume(): void {
+        $client = self::createMock(BinPackingClient::class);
+        $client->expects($this->once())->method('packShipment')->willThrowException(new JsonException('service error'));
+
+        $em = self::createStub(EntityManager::class);
+
+        $packagingRepository = self::createMock(PackagingRepository::class);
+        $packagingRepository->expects($this->once())->method('count')->willReturn(1);
+        $packaging = self::createStub(Packaging::class);
+        $packaging->width = 4;
+        $packaging->height = 4;
+        $packaging->length = 4;
+        $packaging->maxWeight = 100.0;
+        $packaging->method('getId')->willReturn(1);
+        // somehow the packaging volume is 8, not 64. just for test purposes
+        $packaging->method('getVolume')->willReturn(8.0);
+        $packagingRepository->expects($this->once())->method('findByAllowedWeight')
+            ->with(1)
+            ->willReturn([$packaging]);
+
+        $packagingResultRepository = self::createMock(PackagingResultRepository::class);
+        $packagingResultRepository->expects($this->once())->method('findOneByProductsCode')->willReturn(null);
+
+        $service = new PackagingService($client, self::createStub(Logger::class), $em, $packagingRepository, $packagingResultRepository);
+
+        $product = self::createStub(ProductRequest::class);
+        $product->id = 1;
+        $product->width = 3; // volume 27
+        $product->height = 3;
+        $product->length = 3;
+        $product->weight = 1;
+
+        $result = $service->calculateSmallestBox([$product]);
+
+        self::assertFalse($result->fits);
+    }
+
+    public function testCalculateFallbackMultipleProductsFitsByTotalWidth(): void {
+        $client = self::createMock(BinPackingClient::class);
+        $client->expects($this->once())->method('packShipment')->willThrowException(new JsonException('service error'));
+
+        $em = self::createStub(EntityManager::class);
+
+        $packagingRepository = self::createMock(PackagingRepository::class);
+        $packagingRepository->expects($this->once())->method('count')->willReturn(1);
+
+        $packaging = self::createStub(Packaging::class);
+        // packaging must allow max single-dimensions and have enough volume
+        $packaging->width = 6.0;
+        $packaging->height = 5.0;
+        $packaging->length = 5.0;
+        $packaging->maxWeight = 100.0;
+        $packaging->method('getId')->willReturn(11);
+        $packaging->method('getVolume')->willReturn(150.0);
+
+        // total product weight is 2
+        $packagingRepository->expects($this->once())->method('findByAllowedWeight')
+            ->with(2)
+            ->willReturn([$packaging]);
+
+        $packagingResultRepository = self::createMock(PackagingResultRepository::class);
+        $packagingResultRepository->expects($this->once())->method('findOneByProductsCode')->willReturn(null);
+
+        $service = new PackagingService($client, self::createStub(Logger::class), $em, $packagingRepository, $packagingResultRepository);
+
+        $p1 = self::createStub(ProductRequest::class);
+        $p1->id = 1;
+        $p1->width = 2;
+        $p1->height = 2;
+        $p1->length = 2;
+        $p1->weight = 1;
+        $p2 = self::createStub(ProductRequest::class);
+        $p2->id = 2;
+        $p2->width = 3;
+        $p2->height = 3;
+        $p2->length = 3;
+        $p2->weight = 1;
+
+        $result = $service->calculateSmallestBox([$p1, $p2]);
+
+        self::assertTrue($result->fits);
+        self::assertSame(PackagingService::EVALUATOR_FALLBACK, $result->evaluator);
+        self::assertNotNull($result->packaging);
+        self::assertSame(11, $result->packaging->id);
+    }
+
+    public function testCalculateFallbackMultipleProductsDoesNotFitDueToVolume(): void {
+        $client = self::createMock(BinPackingClient::class);
+        $client->expects($this->once())->method('packShipment')->willThrowException(new JsonException('service error'));
+
+        $em = self::createStub(EntityManager::class);
+
+        $packagingRepository = self::createMock(PackagingRepository::class);
+        $packagingRepository->expects($this->once())->method('count')->willReturn(1);
+
+        $packaging = self::createStub(Packaging::class);
+        // packaging dimensions pass max checks but volume is too small
+        $packaging->width = 10.0;
+        $packaging->height = 10.0;
+        $packaging->length = 1.0; // tiny volume
+        $packaging->maxWeight = 100.0;
+        $packaging->method('getVolume')->willReturn(10.0);
+        $packaging->method('getId')->willReturn(12);
+
+        $packagingRepository->expects($this->once())->method('findByAllowedWeight')
+            ->with(2)
+            ->willReturn([$packaging]);
+
+        $packagingResultRepository = self::createMock(PackagingResultRepository::class);
+        $packagingResultRepository->expects($this->once())->method('findOneByProductsCode')->willReturn(null);
+
+        $service = new PackagingService($client, self::createStub(Logger::class), $em, $packagingRepository, $packagingResultRepository);
+
+        $p1 = self::createStub(ProductRequest::class);
+        $p1->id = 1;
+        $p1->width = 2;
+        $p1->height = 2;
+        $p1->length = 2;
+        $p1->weight = 1;
+        $p2 = self::createStub(ProductRequest::class);
+        $p2->id = 2;
+        $p2->width = 3;
+        $p2->height = 3;
+        $p2->length = 3;
+        $p2->weight = 1;
+
+        $result = $service->calculateSmallestBox([$p1, $p2]);
+
+        self::assertFalse($result->fits);
+        self::assertNull($result->packaging);
+    }
+
+    public function testCalculateFallbackMultipleProductsDoesNotFitDueToMaxDimension(): void {
+        $client = self::createMock(BinPackingClient::class);
+        $client->expects($this->once())->method('packShipment')->willThrowException(new JsonException('service error'));
+
+        $em = self::createStub(EntityManager::class);
+
+        $packagingRepository = self::createMock(PackagingRepository::class);
+        $packagingRepository->expects($this->once())->method('count')->willReturn(1);
+
+        $packaging = self::createStub(Packaging::class);
+        // packaging cannot accommodate max individual dimension of one product
+        $packaging->width = 2.0;
+        $packaging->height = 2.0;
+        $packaging->length = 2.0;
+        $packaging->maxWeight = 100.0;
+        $packaging->method('getVolume')->willReturn(8.0);
+        $packaging->method('getId')->willReturn(13);
+
+        $packagingRepository->expects($this->once())->method('findByAllowedWeight')
+            ->with(2)
+            ->willReturn([$packaging]);
+
+        $packagingResultRepository = self::createMock(PackagingResultRepository::class);
+        $packagingResultRepository->expects($this->once())->method('findOneByProductsCode')->willReturn(null);
+
+        $service = new PackagingService($client, self::createStub(Logger::class), $em, $packagingRepository, $packagingResultRepository);
+
+        $p1 = self::createStub(ProductRequest::class);
+        $p1->id = 1;
+        $p1->width = 3;
+        $p1->height = 1;
+        $p1->length = 1;
+        $p1->weight = 1; // width 3 exceeds packaging width 2
+        $p2 = self::createStub(ProductRequest::class);
+        $p2->id = 2;
+        $p2->width = 1;
+        $p2->height = 1;
+        $p2->length = 1;
+        $p2->weight = 1;
+
+        $result = $service->calculateSmallestBox([$p1, $p2]);
+
+        self::assertFalse($result->fits);
+        self::assertNull($result->packaging);
+    }
+
+    public function testCalculateFallbackHeightConditionCausesFit(): void {
+        $client = self::createMock(BinPackingClient::class);
+        $client->expects($this->once())->method('packShipment')->willThrowException(new JsonException('service error'));
+
+        $em = self::createStub(EntityManager::class);
+
+        $packagingRepository = self::createMock(PackagingRepository::class);
+        $packagingRepository->expects($this->once())->method('count')->willReturn(1);
+
+        $packaging = self::createStub(Packaging::class);
+        // packaging must satisfy per-product max dimensions but not total width, and should have sufficient volume
+        $packaging->width = 6.0;   // < totalWidth (7)
+        $packaging->height = 3.0;  // >= totalHeight (2)
+        $packaging->length = 1.0;  // >= maxLength
+        $packaging->maxWeight = 100.0;
+        $packaging->method('getVolume')->willReturn(10.0);
+        $packaging->method('getId')->willReturn(21);
+
+        $packagingRepository->expects($this->once())->method('findByAllowedWeight')
+            ->with(2)
+            ->willReturn([$packaging]);
+
+        $packagingResultRepository = self::createMock(PackagingResultRepository::class);
+        $packagingResultRepository->expects($this->once())->method('findOneByProductsCode')->willReturn(null);
+
+        $service = new PackagingService($client, self::createStub(Logger::class), $em, $packagingRepository, $packagingResultRepository);
+
+        $p1 = self::createStub(ProductRequest::class);
+        $p1->id = 1;
+        $p1->width = 4;
+        $p1->height = 1;
+        $p1->length = 1;
+        $p1->weight = 1;
+        $p2 = self::createStub(ProductRequest::class);
+        $p2->id = 2;
+        $p2->width = 3;
+        $p2->height = 1;
+        $p2->length = 1;
+        $p2->weight = 1;
+
+        $result = $service->calculateSmallestBox([$p1, $p2]);
+
+        self::assertTrue($result->fits);
+        self::assertSame(PackagingService::EVALUATOR_FALLBACK, $result->evaluator);
+        self::assertNotNull($result->packaging);
+        self::assertSame(21, $result->packaging->id);
+    }
+
+    public function testCalculateFallbackReturnsDoesNotFitWhenNoDimensionMeetsTotals(): void {
+        $client = self::createMock(BinPackingClient::class);
+        $client->expects($this->once())->method('packShipment')->willThrowException(new JsonException('service error'));
+
+        $em = self::createStub(EntityManager::class);
+
+        $packagingRepository = self::createMock(PackagingRepository::class);
+        $packagingRepository->expects($this->once())->method('count')->willReturn(1);
+
+        $packaging = self::createStub(Packaging::class);
+        // packaging satisfies per-product max dims but each dimension is smaller than totals
+        $packaging->width = 6.0;   // totalWidth will be 7
+        $packaging->height = 3.0;  // totalHeight will be 4
+        $packaging->length = 1.0;  // totalLength will be 2
+        $packaging->maxWeight = 100.0;
+        $packaging->method('getVolume')->willReturn(18.0); // >= totalVolume
+        $packaging->method('getId')->willReturn(22);
+
+        $packagingRepository->expects($this->once())->method('findByAllowedWeight')
+            ->with(2)
+            ->willReturn([$packaging]);
+
+        $packagingResultRepository = self::createMock(PackagingResultRepository::class);
+        $packagingResultRepository->expects($this->once())->method('findOneByProductsCode')->willReturn(null);
+
+        $service = new PackagingService($client, self::createStub(Logger::class), $em, $packagingRepository, $packagingResultRepository);
+
+        $p1 = self::createStub(ProductRequest::class);
+        $p1->id = 1;
+        $p1->width = 3;
+        $p1->height = 2;
+        $p1->length = 1;
+        $p1->weight = 1;
+        $p2 = self::createStub(ProductRequest::class);
+        $p2->id = 2;
+        $p2->width = 4;
+        $p2->height = 2;
+        $p2->length = 1;
+        $p2->weight = 1;
+
+        $result = $service->calculateSmallestBox([$p1, $p2]);
+
+        self::assertFalse($result->fits);
+        self::assertNull($result->packaging);
     }
 }

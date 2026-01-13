@@ -33,6 +33,8 @@ class Packaging {
     #[ORM\Column(type: Types::FLOAT)]
     public float $maxWeight;
 
+    private ?float $volume = null;
+
     public function __construct(float $width, float $height, float $length, float $maxWeight) {
         $this->width = $width;
         $this->height = $height;
@@ -46,5 +48,13 @@ class Packaging {
         }
 
         return $this->id;
+    }
+
+    public function getVolume(): float {
+        if ($this->volume !== null) {
+            return $this->volume;
+        }
+
+        return $this->volume = $this->width * $this->height * $this->length;
     }
 }
