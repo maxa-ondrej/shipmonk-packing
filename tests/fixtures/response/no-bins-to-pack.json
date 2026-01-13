@@ -1,0 +1,18 @@
+{
+    "response": {
+        "id": "468cad909f199e624faf22612682fb5b",
+        "bins_packed": [],
+        "errors": [
+            {
+                "level": "critical",
+                "message": "No bins to pack. "
+            },
+            {
+                "level": "critical",
+                "message": "No items to pack. "
+            }
+        ],
+        "status": -1,
+        "not_packed_items": []
+    }
+}

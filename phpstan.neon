@@ -1,0 +1,10 @@
+parameters:
+    level: 10
+    paths:
+        - bin
+        - src
+        - tests
+    ignoreErrors:
+        - # Ignore incorrect type hints in tests, as they are intentional for testing purposes
+            identifier: argument.type
+            path: tests

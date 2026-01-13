@@ -1,0 +1,39 @@
+{
+    "response": {
+        "id": "1765731442_2563ded568d454a36ab2cf6cb658ffb9",
+        "status": 1,
+        "errors": [],
+        "not_packed_items": [],
+        "bins_packed": [
+            {
+                "bin_data": {
+                    "w": 5.5,
+                    "h": 6,
+                    "d": 7.5,
+                    "id": "4",
+                    "used_space": 13.4061,
+                    "weight": 13.9,
+                    "gross_weight": 13.9,
+                    "used_weight": 100,
+                    "stack_height": 2.1
+                },
+                "items": [
+                    {
+                        "id": "1",
+                        "w": 3.4,
+                        "h": 2.1,
+                        "d": 3,
+                        "wg": 4
+                    },
+                    {
+                        "id": "2",
+                        "w": 4.9,
+                        "h": 1,
+                        "d": 2.4,
+                        "wg": 9.9
+                    }
+                ]
+            }
+        ]
+    }
+}

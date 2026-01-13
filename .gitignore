@@ -1,0 +1,9 @@
+/.env
+/.idea
+/vendor
+/log
+/.phpunit.cache
+/.composer
+/coverage
+.bash_history
+
